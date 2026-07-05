@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f2ee">
+<title>Реестр проблем</title>
+<style>
+  :root{
+    --bg:#f3f2ee; --panel:#ffffff; --border:#d8d5cc; --text:#1c1b19;
+    --muted:#726f66; --accent:#1c1b19; --danger:#b3392f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:16px 12px calc(24px + env(safe-area-inset-bottom));
+    background:var(--bg); color:var(--text);
+    font-family:'SF Mono',Consolas,Menlo,monospace; font-size:14px; line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:15px;font-weight:600;letter-spacing:.02em;margin:0 0 4px;text-transform:uppercase}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 20px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:2px;padding:18px;margin-bottom:16px}
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px}
+  input,textarea{
+    width:100%;padding:10px;border:1px solid var(--border);border-radius:2px;
+    background:#fbfaf8;color:var(--text);font-family:inherit;font-size:16px;resize:vertical;
+  }
+  textarea{min-height:52px}
+  input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:12px}
+  .row>*{flex:1}
+  .yesno{display:flex;gap:8px}
+  .yesno button{
+    flex:1;padding:11px;border:1px solid var(--border);background:#fbfaf8;
+    font-family:inherit;font-size:14px;cursor:pointer;border-radius:2px;color:var(--muted);
+    min-height:44px;
+  }
+  .yesno button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  button.main{
+    padding:12px 16px;border:1px solid var(--accent);background:var(--accent);color:#fff;
+    font-family:inherit;font-size:14px;cursor:pointer;border-radius:2px;min-height:44px;width:100%;
+  }
+  button.ghost{
+    padding:12px 16px;border:1px solid var(--border);background:transparent;color:var(--text);
+    font-family:inherit;font-size:14px;cursor:pointer;border-radius:2px;min-height:44px;width:100%;
+  }
+  button.main:hover{opacity:.85}
+  button.ghost:hover{background:#eceae4}
+  .list-head{display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 10px}
+  .list-head h2{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin:0;font-weight:600}
+  .count{font-size:12px;color:var(--muted)}
+  .entry{background:var(--panel);border:1px solid var(--border);border-radius:2px;padding:0;margin:0 auto 10px;max-width:480px;width:100%}
+  .entry-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:14px;cursor:pointer;user-select:none;min-height:44px}
+  .entry-head:hover{background:#f7f6f2}
+  .entry-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .entry-date{font-weight:600;font-size:14px}
+  .entry-where{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .entry-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .chevron{font-size:11px;color:var(--muted);transition:transform .15s}
+  .entry.open .chevron{transform:rotate(90deg)}
+  .entry-pay{font-size:11px;padding:3px 6px;border-radius:2px;text-transform:uppercase}
+  .pay-yes{background:#e4ede0;color:#2e5c22}
+  .pay-no{background:#f2e3e1;color:var(--danger)}
+  .entry-body{display:none;padding:0 14px 14px;border-top:1px solid var(--border)}
+  .entry.open .entry-body{display:block;padding-top:10px}
+  .entry-field{margin-bottom:8px;font-size:14px}
+  .entry-field .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.02em;display:block;margin-bottom:2px}
+  .entry-actions{display:flex;gap:16px;margin-top:8px}
+  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-family:inherit;font-size:13px;padding:8px 4px;min-height:36px}
+  .del:hover{color:var(--danger)}
+  .empty{color:var(--muted);font-size:13px;padding:16px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Реестр проблем</h1>
+  <p class="sub">Фиксация гипотез до запуска продукта</p>
+
+  <div class="card">
+    <div class="field">
+      <label>Дата</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field">
+      <label>Где увидел проблему?</label>
+      <input type="text" id="f-where" placeholder="контекст, источник наблюдения">
+    </div>
+    <div class="field">
+      <label>Кто страдает?</label>
+      <input type="text" id="f-who" placeholder="целевая группа">
+    </div>
+    <div class="field">
+      <label>Как они решают её сейчас?</label>
+      <textarea id="f-current"></textarea>
+    </div>
+    <div class="field">
+      <label>Почему текущее решение плохое?</label>
+      <textarea id="f-bad"></textarea>
+    </div>
+    <div class="field">
+      <label>Сколько времени/денег это съедает?</label>
+      <input type="text" id="f-cost" placeholder="например: 2 часа в неделю / 5000 руб.">
+    </div>
+    <div class="field">
+      <label>Заплатил бы я за решение?</label>
+      <div class="yesno">
+        <button type="button" id="pay-yes" onclick="setPay(true)">Да</button>
+        <button type="button" id="pay-no" onclick="setPay(false)">Нет</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="main" id="save-btn" onclick="saveEntry()">Сохранить запись</button>
+      <button class="ghost" id="cancel-btn" onclick="cancelEdit()" style="display:none">Отменить</button>
+      <button class="ghost" onclick="exportTxt()">Выгрузить в .txt</button>
+    </div>
+  </div>
+
+  <div class="list-head">
+    <h2>Записи</h2>
+    <span class="count" id="count">0</span>
+  </div>
+  <div id="list"></div>
+</div>
+
+<script>
+let payValue = null;
+let entries = [];
+let editingIndex = null;
+let expandedSet = new Set();
+const STORAGE_KEY = 'problem-log-entries';
+
+function setPay(val){
+  payValue = val;
+  document.getElementById('pay-yes').classList.toggle('active', val === true);
+  document.getElementById('pay-no').classList.toggle('active', val === false);
+}
+
+function clearForm(){
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-where').value = '';
+  document.getElementById('f-who').value = '';
+  document.getElementById('f-current').value = '';
+  document.getElementById('f-bad').value = '';
+  document.getElementById('f-cost').value = '';
+  payValue = null;
+  document.getElementById('pay-yes').classList.remove('active');
+  document.getElementById('pay-no').classList.remove('active');
+  editingIndex = null;
+  updateFormMode();
+}
+
+function updateFormMode(){
+  const saveBtn = document.getElementById('save-btn');
+  const cancelBtn = document.getElementById('cancel-btn');
+  if(editingIndex === null){
+    saveBtn.textContent = 'Сохранить запись';
+    cancelBtn.style.display = 'none';
+  }else{
+    saveBtn.textContent = 'Обновить запись';
+    cancelBtn.style.display = 'inline-block';
+  }
+}
+
+function editEntry(idx){
+  const e = entries[idx];
+  document.getElementById('f-date').value = e.date === '—' ? '' : e.date;
+  document.getElementById('f-where').value = e.where === '—' ? '' : e.where;
+  document.getElementById('f-who').value = e.who === '—' ? '' : e.who;
+  document.getElementById('f-current').value = e.current === '—' ? '' : e.current;
+  document.getElementById('f-bad').value = e.bad === '—' ? '' : e.bad;
+  document.getElementById('f-cost').value = e.cost === '—' ? '' : e.cost;
+  setPay(e.pay);
+  editingIndex = idx;
+  updateFormMode();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function cancelEdit(){
+  clearForm();
+}
+
+function loadEntries(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    entries = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    entries = [];
+  }
+  render();
+}
+
+function persist(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }catch(e){
+    console.error('Ошибка сохранения', e);
+  }
+}
+
+function saveEntry(){
+  const date = document.getElementById('f-date').value;
+  const where = document.getElementById('f-where').value.trim();
+  const who = document.getElementById('f-who').value.trim();
+  const current = document.getElementById('f-current').value.trim();
+  const bad = document.getElementById('f-bad').value.trim();
+  const cost = document.getElementById('f-cost').value.trim();
+
+  if(!date && !where && !who && !current && !bad && !cost && payValue === null){
+    return;
+  }
+
+  const entry = {
+    date: date || '—',
+    where: where || '—',
+    who: who || '—',
+    current: current || '—',
+    bad: bad || '—',
+    cost: cost || '—',
+    pay: payValue
+  };
+
+  if(editingIndex !== null){
+    entries[editingIndex] = entry;
+  }else{
+    entries.unshift(entry);
+  }
+
+  persist();
+  clearForm();
+  render();
+}
+
+function deleteEntry(idx){
+  entries.splice(idx, 1);
+  persist();
+  render();
+}
+
+function toggleEntry(idx){
+  if(expandedSet.has(idx)) expandedSet.delete(idx);
+  else expandedSet.add(idx);
+  render();
+}
+
+function render(){
+  const list = document.getElementById('list');
+  document.getElementById('count').textContent = entries.length;
+  if(entries.length === 0){
+    list.innerHTML = '<div class="empty">Записей пока нет</div>';
+    return;
+  }
+  list.innerHTML = entries.map((e, i) => `
+    <div class="entry ${expandedSet.has(i) ? 'open' : ''}">
+      <div class="entry-head" onclick="toggleEntry(${i})">
+        <div class="entry-title">
+          <span class="entry-date">${escapeHtml(e.date)}</span>
+          <span class="entry-where">${escapeHtml(e.where)}</span>
+        </div>
+        <div class="entry-meta">
+          <span class="entry-pay ${e.pay === true ? 'pay-yes' : e.pay === false ? 'pay-no' : ''}">${e.pay === true ? 'да' : e.pay === false ? 'нет' : '—'}</span>
+          <span class="chevron">▶</span>
+        </div>
+      </div>
+      <div class="entry-body">
+        <div class="entry-field"><span class="k">Кто страдает</span>${escapeHtml(e.who)}</div>
+        <div class="entry-field"><span class="k">Текущее решение</span>${escapeHtml(e.current)}</div>
+        <div class="entry-field"><span class="k">Почему плохо</span>${escapeHtml(e.bad)}</div>
+        <div class="entry-field"><span class="k">Стоимость (время/деньги)</span>${escapeHtml(e.cost)}</div>
+        <div class="entry-actions">
+          <button class="del" onclick="event.stopPropagation();editEntry(${i})">править</button>
+          <button class="del" onclick="event.stopPropagation();deleteEntry(${i})">удалить</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function exportTxt(){
+  if(entries.length === 0){
+    alert('Нет записей для выгрузки');
+    return;
+  }
+  let out = 'РЕЕСТР ПРОБЛЕМ\n';
+  out += '='.repeat(40) + '\n\n';
+  entries.slice().reverse().forEach((e, i) => {
+    out += `Запись #${i + 1}\n`;
+    out += `Дата: ${e.date}\n`;
+    out += `Где увидел проблему: ${e.where}\n`;
+    out += `Кто страдает: ${e.who}\n`;
+    out += `Как решают сейчас: ${e.current}\n`;
+    out += `Почему плохо: ${e.bad}\n`;
+    out += `Сколько времени/денег съедает: ${e.cost}\n`;
+    out += `Заплатил бы я: ${e.pay === true ? 'да' : e.pay === false ? 'нет' : 'не отмечено'}\n`;
+    out += '-'.repeat(40) + '\n\n';
+  });
+
+  const blob = new Blob([out], {type: 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'реестр-проблем.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+loadEntries();
+</script>
+</body>
+</html>
